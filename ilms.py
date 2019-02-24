@@ -104,3 +104,26 @@ class ILMS:
         if stuid in submissions:
             return self.set_score_by_submission_id(submissions[stuid], score, note)
         self.add_score_by_user_id(self.students[stuid], score, note)
+
+    def send_mail_by_user_id(self, user_id, subject, body):
+        response = self.sess.post(
+            'http://lms.nthu.edu.tw/course/member/email.php',
+            files=form_multipart({
+                'fmSubmit': 'yes',
+                'courseID': self.course,
+                'asst': '',
+                'all': 0,
+                'ids': user_id,
+                'fmSendtanda': '',
+                'fmTitle': subject,
+                'fmNote': body,
+                'fmCCSelf': 1,
+            }),
+            headers={
+                'Referer': 'http://lms.nthu.edu.tw/course/member/email.php'
+            }
+        )
+        assert b"'\xe5\xaf\x84\xe4\xbf\xa1\xe6\x88\x90\xe5\x8a\x9f'" in response.content
+
+    def send_mail_by_student_id(self, student_id, subject, body):
+        self.send_mail_by_user_id(self.students[student_id], subject, body)
