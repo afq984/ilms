@@ -19,7 +19,26 @@ def form_multipart(d):
 
 
 class ILMS:
-    def __init__(self, account, password, course, homework):
+    def __init__(self):
+        print("!!! please init by calling init_by_cookies or init_by_login first !!!\n")
+
+        
+    def init_by_cookies(self, cookie_string, course, homework):
+        '''
+        * cookie_string (from curl parameters): 'PHPSESSID=asdfasfasdfasdfasdf; cookie_locale=zh-tw; cookie_account=108685206; cookie_passwd=asdfasdfasdfasdfasdfasdfasdfasdf; ctx=abasdfasdf+asdfasdfasfasdf'
+        * course: course id on ilms
+        * homework: i don't know
+        '''
+        self.sess = requests.Session()
+        for cookie in cookie_string.split(";"):
+            equalpos = cookie.find("=")
+            key, val = cookie[:equalpos].strip(), cookie[equalpos+1:].strip()
+            self.sess.cookies.set(name=key, value=val)
+        self.course = course
+        self.homework = homework
+        self.students = self.fetch_students()
+
+    def init_by_login(self, account, password, course, homework):
         self.sess = requests.Session()
         resp = self.sess.get(
             'https://lms.nthu.edu.tw/sys/lib/ajax/login_submit.php',
