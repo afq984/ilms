@@ -20,15 +20,10 @@ def form_multipart(d):
 
 class ILMS:
     def __init__(self):
+        self.groups = None
         print("!!! please init by calling init_by_cookies or init_by_login first !!!\n")
 
-        
     def init_by_cookies(self, cookie_string, course, homework):
-        '''
-        * cookie_string (from curl parameters): 'PHPSESSID=asdfasfasdfasdfasdf; cookie_locale=zh-tw; cookie_account=108685206; cookie_passwd=asdfasdfasdfasdfasdfasdfasdfasdf; ctx=abasdfasdf+asdfasdfasfasdf'
-        * course: course id on ilms
-        * homework: i don't know
-        '''
         self.sess = requests.Session()
         for cookie in cookie_string.split(";"):
             equalpos = cookie.find("=")
@@ -68,6 +63,30 @@ class ILMS:
             students[student_id.strip()] = user_id
         print(len(students), 'students')
         return students
+
+    def fetch_groups(self, force=False):
+        if (self.groups != None) and (not force):
+            return self.groups
+        groups = []
+        resp = self.sess.get(
+            'http://lms.nthu.edu.tw/course.php',
+            params={'f': 'grouplist', 'courseID': self.course})
+        html = lxml.html.fromstring(resp.content)
+        table, = html.xpath('//*[@id="t1"]')
+        trs = table.xpath('tr[@class!="header"]')
+        for tr in trs:
+            memberurl, = tr.xpath('td[6]/span/a[2]/@href')
+            member_resp = self.sess.get('http://lms.nthu.edu.tw' + memberurl)
+            member_html = lxml.html.fromstring(member_resp.content)
+            member_table, = member_html.xpath('//*[@id="t1"]')
+            member_trs = member_table.xpath('tr[@class!="header"]')
+            members = []
+            for member_tr in member_trs:
+                members.append(member_tr.xpath('td[2]/div')[0].text)
+            groups.append(members)
+        print(len(groups), 'groups')
+        self.groups = groups
+        return groups
 
     def fetch_submissions(self):
         resp = self.sess.get(
