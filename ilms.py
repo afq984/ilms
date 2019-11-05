@@ -19,23 +19,22 @@ def form_multipart(d):
 
 
 class ILMS:
-    def __init__(self):
-        self.groups = None
-        print("!!! please init by calling init_by_cookies or init_by_login first !!!\n")
-
-    def init_by_cookies(self, cookie_string, course, homework):
-        self.sess = requests.Session()
-        for cookie in cookie_string.split(";"):
-            equalpos = cookie.find("=")
-            key, val = cookie[:equalpos].strip(), cookie[equalpos+1:].strip()
-            self.sess.cookies.set(name=key, value=val)
+    def __init__(self, session, *, course, homework=None):
+        self.sess = session
         self.course = course
         self.homework = homework
         self.students = self.fetch_students()
+        self.groups = None
 
-    def init_by_login(self, account, password, course, homework):
-        self.sess = requests.Session()
-        resp = self.sess.get(
+    @classmethod
+    def login(cls, account, password, *, course, homework=None):
+        """
+        create an ILMS object by account and password.
+
+        course: the courseID at the URL.
+        """
+        sess = requests.Session()
+        resp = sess.get(
             'https://lms.nthu.edu.tw/sys/lib/ajax/login_submit.php',
             params={
                 'account': account,
@@ -45,9 +44,7 @@ class ILMS:
         j = resp.json()
         if j['ret']['status'] != "true":
             raise LoginFailed(resp.json())
-        self.course = course
-        self.homework = homework
-        self.students = self.fetch_students()
+        return cls(sess, course=course, homework=homework)
 
     def fetch_students(self):
         students = {}
