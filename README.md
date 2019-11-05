@@ -18,6 +18,7 @@ import requests
 from ilms import ILMS
 s = requests.Session()
 s.cookies['PHPSESSID'] = 'qF7P5Zj80sONYH5KQmVwR1Hk8t'
+ilms = ILMS(s, course=40596)
 ```
 
 You can get the `PHPSESSID` cookie from browser developer tools.
