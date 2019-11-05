@@ -23,6 +23,7 @@ class ILMS:
         self.sess = session
         self.course = course
         self.homework = homework
+        self.show_course_info()
         self.students = self.fetch_students()
         self.groups = None
 
@@ -45,6 +46,14 @@ class ILMS:
         if j['ret']['status'] != "true":
             raise LoginFailed(resp.json())
         return cls(sess, course=course, homework=homework)
+
+    def show_course_info(self):
+        resp = self.sess.get(f'http://lms.nthu.edu.tw/course/{self.course}')
+        html = lxml.html.fromstring(resp.content)
+        course_name, = html.xpath(
+            '//select[@onchange="changeCourse(this)"]/'
+            'option[@selected]/text()')
+        print('Course:', course_name)
 
     def fetch_students(self):
         students = {}
