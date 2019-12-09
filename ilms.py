@@ -89,10 +89,55 @@ class ILMS:
             members = []
             for member_tr in member_trs:
                 members.append(member_tr.xpath('td[2]/div')[0].text)
-            groups.append(members)
+            qs = urllib.parse.parse_qs(memberurl)
+            groups.append({'teamID': qs['teamID'][0], 'members': members})
         print(len(groups), 'groups')
         self.groups = groups
         return groups
+
+    def set_team_scores(self, team_number, members_scores):
+        """
+            team_number: team number, starting at 1
+            member_scores: dict of student id => scores,
+                for example: {'108080111': 99, '108090222': 88}
+        """
+        if self.groups is None:
+            raise AddScoreFailed("fetch_groups() before set_team_scores()")
+        teamID = self.groups[team_number-1]['teamID']
+        scores = []
+        for mem in members_scores:
+            if mem in self.students:
+                scores.append(self.students[mem] + ':' + str(members_scores[mem]))
+        scores_str = ','.join(scores)
+        hw_list_resp = self.sess.get(
+            'http://lms.nthu.edu.tw/course.php',
+            params={'f': 'hw_doclist', 'courseID': self.course, 'hw': self.homework})
+        hw_list_html = lxml.html.fromstring(hw_list_resp.content)
+        table, = hw_list_html.xpath('//*[@id="t1"]')
+        trs = table.xpath('tr[@class!="header"]')
+        submitted = False
+        for tr in trs:
+            td_a = tr.xpath('td/a')[0]
+            if teamID in td_a.attrib['href']:
+                if td_a.text == '修改':
+                    submitted = True
+                break
+        resp = self.sess.post(
+            'http://lms.nthu.edu.tw/course/score/http_update_group_score.php',
+            headers={'Referer': 'http://lms.nthu.edu.tw/course/hw_group_score.php'},
+            data={
+                'paper': 0,
+                'courseID': self.course,
+                'folderID': self.homework,
+                'teamID': teamID,
+                '_public': 0,
+                'status': 1,
+                'scoreNote': ' ',
+                'updateNewScore': (scores_str if submitted else 'NULL'),
+                'insertNewScore': ('NULL' if submitted else scores_str)
+            }
+        )
+        return resp
 
     def fetch_submissions(self):
         resp = self.sess.get(
