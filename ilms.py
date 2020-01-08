@@ -55,6 +55,19 @@ class ILMS:
             'option[@selected]/text()')
         print('Course:', course_name)
 
+        if self.homework is not None:
+            resp = self.sess.get(
+                'http://lms.nthu.edu.tw/course.php',
+                params={
+                    'courseID': self.course,
+                    'f': 'hw',
+                    'hw': self.homework
+                }
+            )
+            html = lxml.html.fromstring(resp.content)
+            homework_name, = html.xpath('//span[@class="curr"]/text()')
+            print('Homework:', homework_name)
+
     def fetch_students(self):
         students = {}
         resp = self.sess.get(
