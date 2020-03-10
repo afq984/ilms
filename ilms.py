@@ -161,6 +161,8 @@ class ILMS:
         trs = table.xpath('tr[@class!="header"]')
         submissions = {}
         for tr in trs:
+            if tr.xpath('td[@colspan="8"]'):
+                continue
             student_id, = tr.xpath('td[3]/div/text()')
             surl, = tr.xpath('td[2]/div/a/@href')
             cid, = urllib.parse.parse_qs(urllib.parse.urlparse(surl).query)['cid']
